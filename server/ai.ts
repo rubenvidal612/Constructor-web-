@@ -315,8 +315,8 @@ Asegúrate de que la aplicación web pueda ejecutarse de inmediato en la vista p
     }
   }
 
-  // Option 2: Custom DeepSeek / Groq compatible endpoint if specified
-  if (provider !== 'gemini' && customEndpoint && customApiKey) {
+  // Option 3: Custom DeepSeek / Groq compatible endpoint if specified
+  if (customEndpoint && customApiKey) {
     const endpoint = customEndpoint.endsWith('/chat/completions')
       ? customEndpoint
       : `${customEndpoint.replace(/\/$/, '')}/chat/completions`;

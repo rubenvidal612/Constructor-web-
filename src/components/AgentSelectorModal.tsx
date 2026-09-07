@@ -28,6 +28,8 @@ import {
   GLMIcon
 } from './AgentIcons';
 
+import { testKeyDirectly } from '../services/clientAI';
+
 interface AgentSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -322,31 +324,59 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
   if (!isOpen) return null;
 
   const handleTestBAi = async () => {
-    if (!bAiKey.trim()) {
-      setVerifyStatus({ success: false, msg: 'Por favor ingresa la clave de acceso' });
+    const rawKey = bAiKey.trim();
+    if (!rawKey) {
+      setVerifyStatus({ success: false, msg: 'Por favor ingresa tu clave de API personal.' });
       return;
     }
     setVerifying(true);
     setVerifyStatus(null);
     try {
-      const res = await fetch('/api/ai/b_ai/models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: bAiKey.trim() }),
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.models)) {
-        const ids = data.models.map((m: any) => m.id || m.name || String(m));
-        setFetchedModels(ids);
-        setVerifyStatus({
-          success: true,
-          msg: `¡Conexión exitosa con el motor de IA! Se sincronizaron ${ids.length} modelos.`,
+      let serverSucceeded = false;
+      // 1. Try server endpoint first (when backend is available)
+      try {
+        const res = await fetch('/api/ai/b_ai/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey: rawKey }),
         });
-      } else {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.models)) {
+            const ids = data.models.map((m: any) => m.id || m.name || String(m));
+            setFetchedModels(ids);
+            setVerifyStatus({
+              success: true,
+              msg: `¡Conexión exitosa con el motor de IA! Se sincronizaron ${ids.length} modelos.`,
+            });
+            serverSucceeded = true;
+          }
+        }
+      } catch {
+        // Backend not available (e.g. Vercel static deployment)
+      }
+
+      // 2. If server endpoint was not reachable or returned HTML (e.g. Vercel 404), test directly in browser!
+      if (!serverSucceeded) {
+        const directResult = await testKeyDirectly(rawKey);
         setVerifyStatus({
-          success: false,
-          msg: data.error || 'No se pudo conectar con el motor de IA. Verifica tu clave.',
+          success: directResult.success,
+          msg: directResult.message,
         });
+        if (directResult.success) {
+          if (directResult.models && directResult.models.length > 0) {
+            setFetchedModels(directResult.models);
+          }
+          if (directResult.detectedProvider === 'gemini') {
+            setProvider('gemini');
+            setBAiModel('gemini-2.5-flash');
+          } else if (directResult.detectedProvider === 'groq') {
+            setProvider('groq');
+          } else {
+            setProvider('b_ai');
+          }
+        }
       }
     } catch (err: any) {
       setVerifyStatus({

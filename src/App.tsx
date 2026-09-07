@@ -16,6 +16,7 @@ import { ProjectPaletteModal } from './components/ProjectPaletteModal';
 import { LandingPage } from './components/LandingPage';
 import { PaletteDrawerMenu } from './components/PaletteDrawerMenu';
 import { RegistrationModal } from './components/RegistrationModal';
+import { generateCodeClientSide } from './services/clientAI';
 import { INITIAL_FILES } from './data/defaultProject';
 import { STARTER_TEMPLATES } from './data/templates';
 import {
@@ -423,10 +424,47 @@ Puedes pedirme modificar componentes de interfaz, generar modelos de datos reale
     const snapshotBefore = JSON.parse(JSON.stringify(files));
 
     try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let data: any = null;
+      let serverSuccess = false;
+
+      // 1. Try server backend endpoint first (if fullstack / Node server is running)
+      try {
+        const res = await fetch('/api/ai/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptText,
+            systemPrompt,
+            files: files.map((f) => ({ path: f.path, content: f.content, language: f.language })),
+            supabaseConfig,
+            injectSupabase,
+            provider: llmConfig.provider,
+            customEndpoint: llmConfig.customEndpoint,
+            customApiKey: llmConfig.customApiKey,
+            customModel: llmConfig.modelName,
+            bAiApiKey: llmConfig.bAiApiKey,
+            bAiModel: llmConfig.bAiModel,
+          }),
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          data = await res.json();
+          serverSuccess = true;
+        } else if (!res.ok && contentType.includes('application/json')) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Error del servidor (${res.status})`);
+        }
+      } catch (serverErr: any) {
+        // If error was NOT a 404 HTML parse failure, log it
+        if (!serverErr.message?.includes('Unexpected token')) {
+          console.warn('Server endpoint notice:', serverErr.message);
+        }
+      }
+
+      // 2. If server was not reachable or returned HTML 404 (e.g. Vercel static deployment):
+      if (!serverSuccess || !data) {
+        data = await generateCodeClientSide({
           prompt: promptText,
           systemPrompt,
           files: files.map((f) => ({ path: f.path, content: f.content, language: f.language })),
@@ -435,15 +473,9 @@ Puedes pedirme modificar componentes de interfaz, generar modelos de datos reale
           provider: llmConfig.provider,
           customEndpoint: llmConfig.customEndpoint,
           customApiKey: llmConfig.customApiKey,
-          customModel: llmConfig.modelName,
           bAiApiKey: llmConfig.bAiApiKey,
           bAiModel: llmConfig.bAiModel,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Falló la generación con IA');
+        });
       }
 
       const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
