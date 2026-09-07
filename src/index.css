@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0F1115;
+  --sidebar: #16191E;
+  --border: #2D3139;
+  --accent: #3B82F6;
+  --text-muted: #94A3B8;
+  --code-bg: #1E2227;
+}
+
+body {
+  background-color: var(--bg);
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #E2E8F0;
+  overflow: hidden;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-online {
+  background-color: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}

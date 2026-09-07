@@ -1,0 +1,7 @@
+{
+  "name": "Web AI Studio - Code & Deploy Engine",
+  "description": "Full-stack AI web application builder with GitHub sync, Vercel deployments, Supabase integration, and live code preview.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
