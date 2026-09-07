@@ -291,11 +291,11 @@ export default function App() {
     'Lo que estemos construyendo quiero que todo sea funcional y no simulado ya que queremos que al final sirva para usarlo realmente. Todo debe responderse y explicarse siempre en español.'
   );
 
-  // LLM Config (Default to Modo Auto with intelligent routing)
+  // LLM Config (Default to Gemini 2.5 Flash - 100% Free & Built-in Google AI Studio)
   const [llmConfig, setLlmConfig] = useState<LLMConfig>({
-    provider: 'b_ai',
-    bAiModel: 'auto',
-    modelName: 'Modo Auto',
+    provider: 'gemini',
+    bAiModel: 'gemini-2.5-flash',
+    modelName: 'Gemini 2.5 Flash',
   });
 
   // Chat Sessions History (matching Google AI Studio Screenshot 2)
@@ -867,6 +867,13 @@ npm run build
 
   const handleUserRegister = (user: AppUser) => {
     setCurrentUser(user);
+    if (user.modelPreference?.includes('Gemini')) {
+      setLlmConfig({
+        provider: 'gemini',
+        modelName: 'Gemini 2.5 Flash',
+        bAiModel: 'gemini-2.5-flash',
+      });
+    }
     setToastMessage(`🎉 ¡Bienvenido a Web AI Studio, ${user.name}!`);
     setTimeout(() => setToastMessage(null), 4000);
     handleSelectAppView('studio');

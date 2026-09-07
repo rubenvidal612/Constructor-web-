@@ -55,8 +55,8 @@ export async function callGeminiAPI(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Map to a valid model name supported by GoogleGenAI
-  const isPro = targetModel.toLowerCase().includes('pro');
+  // Use gemini-2.5-flash by default for fast, free execution; use pro if customApiKey is provided
+  const isPro = targetModel.toLowerCase().includes('pro') && !!customApiKey;
   const primaryModel = isPro ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
   let responseText = '';

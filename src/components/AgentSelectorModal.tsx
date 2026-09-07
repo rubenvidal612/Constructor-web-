@@ -194,15 +194,15 @@ export const ALL_BAI_MODELS: BAiModelItem[] = [
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     category: 'Google',
-    tag: 'Rápido',
-    description: 'Rápido, versátil y con ventana de contexto extendida.',
+    tag: '⚡ 100% Gratis / Google AI Studio',
+    description: 'Completamente gratuito, ultrarrápido y nativo de Google AI Studio. Listo para usar sin configurar API Key.',
   },
   {
     id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     category: 'Google',
     tag: 'Multimodal Pro',
-    description: 'Alta precisión analítica para código complejo y análisis de imágenes.',
+    description: 'Alta precisión analítica para código complejo y arquitectura avanzada con fallback automático.',
   },
   {
     id: 'gemini-1.5-pro',
@@ -360,11 +360,16 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
   const handleSelectModel = (id: string) => {
     setBAiModel(id);
-    setProvider('b_ai');
+    if (id.startsWith('gemini')) {
+      setProvider('gemini');
+    } else {
+      setProvider('b_ai');
+    }
   };
 
   const handleSave = () => {
-    const finalProvider = activeTab === 'b_ai' ? 'b_ai' : provider;
+    const isGemini = bAiModel.startsWith('gemini') || provider === 'gemini';
+    const finalProvider = isGemini ? 'gemini' : (activeTab === 'b_ai' ? 'b_ai' : provider);
     const chosenModel =
       bAiModel === 'custom_agent' && customAgentInput.trim()
         ? customAgentInput.trim()
@@ -382,12 +387,12 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
       bAiModel: chosenModel,
       customApiKey: customApiKey.trim(),
       modelName:
-        finalProvider === 'b_ai'
+        finalProvider === 'gemini'
+          ? labelModel || 'Gemini 2.5 Flash'
+          : finalProvider === 'b_ai'
           ? chosenModel === 'auto'
             ? 'Modo Auto'
             : labelModel
-          : finalProvider === 'gemini'
-          ? 'Gemini 3.8 Flash'
           : finalProvider === 'groq'
           ? 'Groq (Llama 3.3)'
           : finalProvider === 'deepseek'
