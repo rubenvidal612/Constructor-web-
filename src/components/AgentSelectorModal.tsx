@@ -410,22 +410,33 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
     const finalKey = keySource === 'byok' ? bAiKey.trim() : '';
 
+    // If using B.AI private key, B.AI distributor does not host Gemini; switch to DeepSeek-V3
+    let modelToUse = chosenModel;
+    let providerToUse = finalProvider;
+    let labelToUse = labelModel;
+
+    if (finalKey && modelToUse.startsWith('gemini')) {
+      modelToUse = 'deepseek-v3';
+      providerToUse = 'b_ai';
+      labelToUse = 'DeepSeek-V3';
+    }
+
     setLlmConfig({
       ...llmConfig,
-      provider: finalProvider,
+      provider: providerToUse,
       bAiApiKey: finalKey,
-      bAiModel: chosenModel,
+      bAiModel: modelToUse,
       customApiKey: customApiKey.trim(),
       modelName:
-        finalProvider === 'gemini'
-          ? labelModel || 'Gemini 2.5 Flash'
-          : finalProvider === 'b_ai'
-          ? chosenModel === 'auto'
+        providerToUse === 'gemini'
+          ? labelToUse || 'Gemini 2.5 Flash'
+          : providerToUse === 'b_ai'
+          ? modelToUse === 'auto'
             ? 'Modo Auto'
-            : labelModel
-          : finalProvider === 'groq'
+            : labelToUse
+          : providerToUse === 'groq'
           ? 'Groq (Llama 3.3)'
-          : finalProvider === 'deepseek'
+          : providerToUse === 'deepseek'
           ? 'DeepSeek Coder-V3'
           : customModel || 'Custom LLM',
     });

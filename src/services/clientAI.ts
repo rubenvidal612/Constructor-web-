@@ -332,35 +332,61 @@ Asegúrate de que la aplicación web pueda ejecutarse de inmediato en la vista p
 
   // 3. Check OpenAI / B.AI
   if (activeKey) {
-    const endpoint = activeKey.startsWith('sk-proj-')
+    const isSpecialOpenAI = activeKey.startsWith('sk-proj-') || activeKey.startsWith('sk-svc-');
+    const endpoint = isSpecialOpenAI
       ? 'https://api.openai.com/v1/chat/completions'
       : 'https://api.b.ai/v1/chat/completions';
 
-    const targetModel = activeKey.startsWith('sk-proj-')
-      ? 'gpt-4o'
-      : (bAiModel && bAiModel !== 'auto' ? bAiModel : 'deepseek-v3');
+    // B.AI distributor models: DeepSeek, Claude, Qwen, GPT.
+    // If the user currently has a Gemini model selected, B.AI distributor does NOT have it!
+    // Safely map to 'deepseek-v3' (B.AI's flagship coding model)
+    let targetModel = 'deepseek-v3';
+    if (isSpecialOpenAI) {
+      targetModel = 'gpt-4o';
+    } else if (bAiModel && bAiModel !== 'auto' && !bAiModel.toLowerCase().includes('gemini')) {
+      targetModel = bAiModel;
+    }
 
-    const res = await fetch(endpoint, {
+    const payload = {
+      model: targetModel,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.3,
+    };
+
+    let res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${activeKey}`,
         'x-api-key': activeKey,
       },
-      body: JSON.stringify({
-        model: targetModel,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemInstruction },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    // If B.AI distributor returns model_not_found, auto-recover with deepseek-v3 or deepseek-chat
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`API error (${res.status}): ${err}`);
+      const errText = await res.text();
+      if (errText.includes('model_not_found') && targetModel !== 'deepseek-v3') {
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${activeKey}`,
+            'x-api-key': activeKey,
+          },
+          body: JSON.stringify({
+            ...payload,
+            model: 'deepseek-v3',
+          }),
+        });
+      }
+      if (!res.ok) {
+        throw new Error(`API error (${res.status}): ${errText}`);
+      }
     }
 
     const data = await res.json();
